@@ -1,12 +1,10 @@
-import { useCallback, useMemo, memo } from "react";
+import { useCallback, useMemo, memo, useRef, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Text } from "@react-navigation/elements";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Animated } from "react-native";
 import styled from "styled-components/native";
 import { observer } from "mobx-react";
 import { useQuotesStore } from "../store";
-
-const API_URL = "https://futures-api.poloniex.com/api/v2/tickers";
 
 type QuotesData = {
   symbol: string;
@@ -57,17 +55,13 @@ const Spacer = styled.View<{
   height: ${({ size = 16 }) => size}px;
 `;
 
-// Table styles
-
 const Row = styled.View`
   flex-direction: row;
   background-color: #0388fc;
 `;
 
-const Cell = styled.View<{
-  width?: number;
-}>`
-  width: ${({ width = 70 }) => width}px;
+const Cell = styled.View`
+  width: 70px;
   background-color: #c1def7;
   margin: 1px;
   padding: 2px;
@@ -78,12 +72,14 @@ const HeadText = styled.Text`
   font-weight: bold;
 `;
 
-const DataText = styled.Text`
+const AnimatedCell = styled(Animated.Text)`
   font-size: 12px;
 `;
 
 const QuotesScreen = observer(() => {
   const store = useQuotesStore();
+  const animatedValues = useRef({}).current;
+  const previousValues = useRef({}).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -92,27 +88,100 @@ const QuotesScreen = observer(() => {
     }, [])
   );
 
+  useEffect(() => {
+    store.quotes.forEach((item: QuotesData) => {
+      if (!animatedValues[item.symbol]) {
+        animatedValues[item.symbol] = {
+          price: new Animated.Value(0),
+          bestBidPrice: new Animated.Value(0),
+          bestAskPrice: new Animated.Value(0),
+          bestAskSize: new Animated.Value(0),
+        };
+        previousValues[item.symbol] = {
+          price: Number(item.price),
+          bestBidPrice: Number(item.bestBidPrice),
+          bestAskPrice: Number(item.bestAskPrice),
+        };
+      }
+
+      const updateValue = (key: string, newValue: number) => {
+        const prevValue = previousValues[item.symbol][key];
+        if (prevValue === newValue) return; // Если значение не изменилось, не анимируем
+
+        const direction =
+          newValue > prevValue ? 1 : newValue < prevValue ? -1 : 0; // 1 - рост, -1 - падение, 0 - без изменений
+
+        Animated.timing(animatedValues[item.symbol][key], {
+          toValue: direction,
+          duration: 500,
+          useNativeDriver: false,
+        }).start(() => {
+          Animated.timing(animatedValues[item.symbol][key], {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: false,
+          }).start(() => {
+            previousValues[item.symbol][key] = newValue;
+          });
+        });
+      };
+
+      updateValue("price", Number(item.price));
+      updateValue("bestBidPrice", Number(item.bestBidPrice));
+      updateValue("bestAskPrice", Number(item.bestAskPrice));
+      updateValue("bestAskSize", Number(item.bestAskSize));
+    });
+  }, [store.quotes]);
+
+  const getColor = (animatedValue: Animated.Value) => {
+    return animatedValue.interpolate({
+      inputRange: [-1, 0, 1],
+      outputRange: ["red", "black", "green"],
+    });
+  };
+
   const renderItem = useCallback(({ item }: { item: QuotesData }) => {
     const { symbol, price, bestBidPrice, bestAskPrice, bestAskSize } = item;
 
     const formattedSymbol = Array.from(symbol).slice(0, -8).join("");
 
+    const animatedPrice =
+      animatedValues[item.symbol]?.price ||
+      new Animated.Value(Number(item.price) || 0);
+    const animatedBestBid =
+      animatedValues[item.symbol]?.bestBidPrice ||
+      new Animated.Value(Number(item.bestBidPrice) || 0);
+    const animatedBestAsk =
+      animatedValues[item.symbol]?.bestAskPrice ||
+      new Animated.Value(Number(item.bestAskPrice) || 0);
+    const animatedBestSize =
+      animatedValues[item.symbol]?.bestAskSize ||
+      new Animated.Value(Number(item.bestAskSize) || 0);
+
     return (
       <Row>
         <Cell>
-          <DataText>{formattedSymbol}</DataText>
+          <AnimatedCell>{formattedSymbol}</AnimatedCell>
         </Cell>
         <Cell>
-          <DataText>{price}</DataText>
+          <AnimatedCell style={{ color: getColor(animatedPrice) }}>
+            {price}
+          </AnimatedCell>
         </Cell>
         <Cell>
-          <DataText>{bestBidPrice}</DataText>
+          <AnimatedCell style={{ color: getColor(animatedBestBid) }}>
+            {bestBidPrice}
+          </AnimatedCell>
         </Cell>
         <Cell>
-          <DataText>{bestAskPrice}</DataText>
+          <AnimatedCell style={{ color: getColor(animatedBestAsk) }}>
+            {bestAskPrice}
+          </AnimatedCell>
         </Cell>
         <Cell>
-          <DataText>{bestAskSize}</DataText>
+          <AnimatedCell style={{ color: getColor(animatedBestSize) }}>
+            {bestAskSize}
+          </AnimatedCell>
         </Cell>
       </Row>
     );

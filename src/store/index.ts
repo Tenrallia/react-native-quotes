@@ -1,5 +1,10 @@
 import { useLocalObservable } from "mobx-react";
 import { useEffect } from "react";
+import { configure } from "mobx";
+
+configure({
+  enforceActions: "never",
+});
 
 const API_URL = "https://futures-api.poloniex.com/api/v2/tickers";
 
