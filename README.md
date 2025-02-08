@@ -1,3 +1,7 @@
+# App Demo
+
+![App Demo](src/assets/appDemo.gif)
+
 # Starter Template with React Navigation
 
 This is a minimal starter template for React Native apps using Expo and React Navigation.
