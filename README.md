@@ -1,6 +1,6 @@
 # App Demo
 
-![App Demo](src/assets/appDemo.gif)
+<img src="src/assets/appDemo.gif" width="400" />
 
 # Starter Template with React Navigation
 
