@@ -1,14 +1,10 @@
-import { useEffect, useState, useCallback, useMemo, memo } from "react";
+import { useCallback, useMemo, memo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Text } from "@react-navigation/elements";
-import {
-  View,
-  FlatList,
-  ActivityIndicator,
-  Animated,
-  useAnimatedValue,
-} from "react-native";
+import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
+import { observer } from "mobx-react";
+import { useQuotesStore } from "../store";
 
 const API_URL = "https://futures-api.poloniex.com/api/v2/tickers";
 
@@ -28,12 +24,6 @@ const Container = styled.View`
   align-items: center;
   padding: 16px 8px;
 `;
-
-// const ContentContainer = styled.View`
-//   flex: 1;
-//   width: 100%;
-//   background-color: green;
-// `;
 
 const ErrorContainer = styled.View`
   flex: 1;
@@ -92,44 +82,13 @@ const DataText = styled.Text`
   font-size: 12px;
 `;
 
-const QuotesScreen = () => {
-  const [quotesData, setQuotesData] = useState([]);
-  const [error, setError] = useState<string | null>();
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const fetchData = useCallback(async () => {
-    try {
-      console.log("getData");
-      const response = await fetch(API_URL)
-        // .then(() => {
-        //   throw "kjhbj";
-        // })
-        .then((res) => res.json())
-        .then((results) => {
-          setQuotesData(results["data"]);
-          if (error) {
-            setError(null);
-          }
-        });
-    } catch (e) {
-      setError("Ошибка загрузки данных. \n\n Пожалуйста подождите.");
-      setQuotesData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const QuotesScreen = observer(() => {
+  const store = useQuotesStore();
 
   useFocusEffect(
     useCallback(() => {
-      // fetchData();
-
-      let interval = setInterval(fetchData, 5000);
-
-      console.log("quotesData", quotesData);
-
-      return () => {
-        clearInterval(interval);
-      };
+      store.startFetching();
+      return () => store.stopFetching();
     }, [])
   );
 
@@ -184,19 +143,19 @@ const QuotesScreen = () => {
     () => (
       <ErrorContainer>
         <AbsoluteView>
-          <Text>{error}</Text>
+          <Text>{store.error}</Text>
         </AbsoluteView>
         <ActivityIndicator size="large" color="#0388fc" />
       </ErrorContainer>
     ),
-    [error]
+    [store.error]
   );
 
   return (
     <Container>
-      {error ? (
+      {store.error ? (
         renderError
-      ) : !loading && quotesData.length > 0 ? (
+      ) : !store.loading && store.quotes.length > 0 ? (
         <>
           <ContainerWithBorder>
             <Text>Name - Symbol</Text>
@@ -208,7 +167,7 @@ const QuotesScreen = () => {
           <Spacer />
 
           <FlatList
-            data={quotesData}
+            data={store.quotes}
             renderItem={renderItem}
             keyExtractor={(_, index) => index.toString()}
             showsHorizontalScrollIndicator={true}
@@ -220,6 +179,6 @@ const QuotesScreen = () => {
       )}
     </Container>
   );
-};
+});
 
 export default memo(QuotesScreen);
