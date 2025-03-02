@@ -1,5 +1,4 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { HeaderButton, Text } from "@react-navigation/elements";
 import {
   createStaticNavigation,
   StaticParamList,
@@ -55,29 +54,6 @@ const RootStack = createNativeStackNavigator({
         headerShown: false,
       },
     },
-    // Profile: {
-    //   screen: Profile,
-    //   // linking: {
-    //   //   path: ":user(@[a-zA-Z0-9-_]+)",
-    //   //   parse: {
-    //   //     user: (value) => value.replace(/^@/, ""),
-    //   //   },
-    //   //   stringify: {
-    //   //     user: (value) => `@${value}`,
-    //   //   },
-    //   // },
-    // },
-    // Settings: {
-    //   screen: Settings,
-    //   options: ({ navigation }) => ({
-    //     presentation: "modal",
-    //     headerRight: () => (
-    //       <HeaderButton onPress={navigation.goBack}>
-    //         <Text>Close</Text>
-    //       </HeaderButton>
-    //     ),
-    //   }),
-    // },
   },
 });
 

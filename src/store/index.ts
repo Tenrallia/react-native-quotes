@@ -1,12 +1,11 @@
 import { useLocalObservable } from "mobx-react";
 import { useEffect } from "react";
 import { configure } from "mobx";
+import { API_REFRESH_INTERVAL, POLONIEX_API_URL } from "../../config";
 
 configure({
   enforceActions: "never",
 });
-
-const API_URL = "https://futures-api.poloniex.com/api/v2/tickers";
 
 type QuotesStoreType = {
   quotes: [];
@@ -29,7 +28,7 @@ export function useQuotesStore() {
     async fetchData() {
       try {
         store.error = null;
-        const response = await fetch(API_URL);
+        const response = await fetch(POLONIEX_API_URL);
 
         if (response) {
           const data = await response.json();
@@ -51,7 +50,10 @@ export function useQuotesStore() {
 
     startFetching() {
       store.fetchData();
-      store.interval = setInterval(() => store.fetchData(), 5000);
+      store.interval = setInterval(
+        () => store.fetchData(),
+        API_REFRESH_INTERVAL
+      );
     },
 
     stopFetching() {
